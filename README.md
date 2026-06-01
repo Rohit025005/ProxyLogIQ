@@ -208,19 +208,7 @@ curl -X POST http://localhost:8080/api/logs/upload \
 
 ---
 
-## Dashboard Features
 
-The Next.js dashboard (http://localhost:3000/dashboard) includes:
-
-1. **KPI Cards** — Total Requests, Cache Hit Ratio (%), Average Latency (ms), Invalid Log Count
-2. **Status Code Distribution** — Pie chart showing proportion of each HTTP status code
-3. **Cache Hit/Miss** — Bar chart showing HIT vs MISS counts
-4. **Top 10 Endpoints** — Horizontal bar list of most requested paths
-5. **Recent Valid Logs** — Paginated table with timestamp, method, path, status, cache, latency, bytes
-6. **Invalid Logs** — Paginated table with raw line and error reason
-7. **Filter Controls** — Dropdowns for Method, Status Code, Cache Status, and Date Range (From/To)
-
----
 
 ## Testing
 
@@ -237,105 +225,8 @@ Tests run: 17, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
-### Test Breakdown
 
-**LogParserServiceTest (7 tests):**
-- Parse a valid line and verify all fields
-- Reject line with wrong field count
-- Reject line with invalid timestamp
-- Reject line with negative latency
-- Reject line with invalid status code
-- Parse a multi-line file and correctly separate valid/invalid entries
-- Skip empty and comment lines
 
-**AnalyticsServiceTest (10 tests):**
-- Total request count
-- Cache hit ratio calculation (50% for 1 hit out of 2)
-- Cache hit ratio returns 0 for empty dataset
-- Average latency calculation
-- Status code distribution grouping
-- Top paths returns sorted results
-- Slowest requests via repository call
-- Filter by method
-- Filter returns empty for no match
-- Latency percentiles return correct keys
-
----
-
-## Project Walkthrough (for interviews)
-
-### Architecture Overview
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                     Frontend (Next.js 16)                    │
-│  ┌─────────┐ ┌──────────┐ ┌────────────┐ ┌──────────────┐    │
-│  │KPI Cards│ │  Charts  │ │  Tables    │ │   Filters    │    │
-│  └────┬────┘ └────┬─────┘ └─────┬──────┘ └──────┬───────┘    │
-│       └───────────┴─────────────┴───────────────┘            │
-│                         │ REST API                           │
-└─────────────────────────┼────────────────────────────────────┘
-                          │
-┌─────────────────────────┼───────────────────────────────────┐
-│               Backend (Spring Boot)                         │
-│  ┌────────────┐  ┌──────────────┐  ┌────────────────────┐   │
-│  │ Controller │──│   Service    │──│   Repository       │   │
-│  │ (REST API) │  │ (Business)   │  │ (Data Access)      │   │
-│  └────────────┘  └──────┬───────┘  └─────────┬──────────┘   │
-│                         │                    │              │
-│                  ┌──────┴──────┐             │              │
-│                  │LogParser    │             │              │
-│                  │Service      │             │              │
-│                  └─────────────┘             │              │
-│                                        ┌─────┴─────┐        │
-│                                        │ PostgreSQL │       │
-│                                        └───────────┘        │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Key Design Decisions
-
-1. **Layered Architecture** — Controller → Service → Repository keeps concerns separated, making the code testable and maintainable.
-
-2. **Line-by-line Processing** — Using `BufferedReader` instead of reading the entire file into memory ensures the system can handle large log files without `OutOfMemoryError`.
-
-3. **Separate Valid/Invalid Storage** — Invalid lines are stored with their error reason, allowing admins to inspect what went wrong and fix the source data. The `InvalidLogEntry` entity captures the raw line and the parsing error.
-
-4. **Pagination & Filtering** — All listing endpoints accept `Pageable` and filter parameters. The `Page` response includes metadata (`totalElements`, `totalPages`) needed for frontend pagination.
-
-5. **Global Exception Handling** — A single `@ControllerAdvice` catches all exceptions and returns consistent JSON error responses, avoiding `500` error pages and leaking stack traces.
-
-6. **DTO Pattern** — The upload endpoint returns a `LogUploadResponseDto` instead of exposing entity internals. This decouples the API contract from the database schema.
-
-### What I Would Improve with More Time
-
-- **JPA Specifications** — Replace in-memory filtering with database-level `Specification` queries for better performance on large datasets
-- **Caching** — Cache frequently accessed analytics results in Redis
-- **Authentication** — Spring Security with JWT tokens to protect upload endpoints
-- **Rate Limiting** — Prevent abuse of the upload endpoint
-- **Audit Logging** — Track who uploaded which file and when
-
----
-
-## Resume Value
-
-This project demonstrates the following skills sought after in Java/Spring Boot fresher roles:
-
-| Skill | Demonstrated By |
-|-------|----------------|
-| **Java** | 42 source files, streams, lambdas, optionals |
-| **Spring Boot** | Auto-configuration, dependency injection, REST controllers |
-| **Spring Data JPA** | Entity mapping, repository pattern, custom queries |
-| **PostgreSQL** | Database schema, JPA/Hibernate integration |
-| **REST API Design** | 8 well-structured endpoints with pagination/filtering |
-| **Exception Handling** | `@ControllerAdvice`, consistent error responses |
-| **Testing** | 17 JUnit/Mockito tests covering core logic |
-| **Docker** | Docker Compose for 3 services, multi-stage build |
-| **Frontend Integration** | Next.js consuming REST APIs with typed client |
-| **Project Structure** | Layered architecture, DTOs, separation of concerns |
-| **Code Quality** | No comments, clean naming, single responsibility |
-
----
 
 ## License
 
