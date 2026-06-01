@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  # Backend Spring Boot Application
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/proxlogiq
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+    depends_on:
+      - db
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - proxlogiq-network
+
+  # PostgreSQL Database
+  db:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=proxlogiq
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - proxlogiq-network
+
+  # Frontend Next.js Application
+  frontend:
+    build:
+      context: ../proxy-log-dashboard
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080/api/logs
+    depends_on:
+      - backend
+    networks:
+      - proxlogiq-network
+
+networks:
+  proxlogiq-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
